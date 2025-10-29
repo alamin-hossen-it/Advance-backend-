@@ -4,7 +4,7 @@ import bcrypt from "bcrypt"
 
 
 const userSchema = new mongoose.Schema({
-    username: {
+    userName: {
         type: String,
         required:[true, "Please fill the name field"],
         unique: true,
@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
         type: String, //Cloudinary url
         required: true,
     },
-        coverImage:{
+     coverImage:{
         type: String, //Cloudinary url
     },
     watchHistory:[
@@ -63,7 +63,7 @@ userSchema.methods.generateAccessToken =  function(){
   return jwt.sign({
         _id: this._id,
         email: this.email,
-        username: this.username,
+        username: this.userName,
         fullName: this.fullName
     },process.env.ACCESS_TOKEN_SECRET, {expiresIn:process.env.ACCESS_TOKEN_EXPIRY})
 }
