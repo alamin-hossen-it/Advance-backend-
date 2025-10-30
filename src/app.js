@@ -14,4 +14,14 @@ app.use(cookieParser())
 //static routers decleration
 app.use("/api/v1/users", userRouter)
 
+// Custom Error Handler
+app.use((err, req, res, next) => {
+    console.error(err); // server console এ log
+    res.status(err.statusCode || 500).json({
+        success: false,
+        message: err.message || "Internal Server Error",
+        errors: err.errors || []
+    });
+});
+
 export default app;

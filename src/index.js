@@ -1,9 +1,11 @@
 import dotenv from "dotenv";
 import dataBaseConnect from "./db/database.js";
 import app from "./app.js";
+dotenv.config({
+    path: "./.env"
+})
 
 
-dotenv.config()
 dataBaseConnect().then(()=>{
     app.listen(process.env.PORT || 3000, ()=>{
         console.log(`Server is running at http://localhost:${process.env.PORT}`)
