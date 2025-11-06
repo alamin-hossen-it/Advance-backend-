@@ -4,6 +4,7 @@ import { User } from "../models/user.models.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
+import deleteOldImage from "../utils/deleteOldImage.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -56,6 +57,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 
   // const coverImage = await uploadOnCloudinary(coverImageLocalPath)
   const coverImageLocalPath = req.files?.coverImage?.[0]?.path || "";
+  console.log(req.files)
 
   // Upload only if cover image is provided
   let coverImage = null;
@@ -71,8 +73,8 @@ export const registerUser = asyncHandler(async (req, res) => {
   // finaly create user object and save into database.
   const newUser = await User.create({
     fullName,
-    avatar: avatar.url,
-    coverImage: coverImage?.url || "",
+    coverImage: coverImage?{url: coverImage.url, publicId: coverImage.public_id} : null,
+    avatar:{url: avatar.url, publicId: avatar.public_id},
     email,
     password,
     userName: userName.toLowerCase(),
@@ -163,8 +165,7 @@ export const logOutUser = asyncHandler(async (req, res) => {
 });
 
 export const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken =
-    req.cookies?.refreshToken ?? req.body?.refreshToken;
+  const incomingRefreshToken = req.cookies?.refreshToken ?? req.body?.refreshToken;
   if (!incomingRefreshToken) {
     throw new ApiError(401, "Unouthorized request");
   }
@@ -230,7 +231,7 @@ export const changeCurrentPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password changed successfully!"));
 });
 
-export const currentUser = asyncHandler(async (req, res) => {
+export const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, req.user, "Current user fetched successfully"));
@@ -255,17 +256,20 @@ export const updateAccountDetails = asyncHandler(async (req, res) => {
 
 export const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path;
+  console.log(avatarLocalPath)
   if (!avatarLocalPath) {
-    throw new ApiError(400, "Avtar is missing");
+    throw new ApiError(400, "Avatar is missing");
   }
+  await deleteOldImage(req.user?._id, "avatar")
+  
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   if (!avatar.url) {
-    throw new ApiError(400, "Error while uploading on avatar");
+    throw new ApiError(400, "Error while updaing on avatar");
   }
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
-    { $set: { avatar: avatar.url } },
+    { $set: { avatar:{url: avatar?.url, publicId: avatar?.public_id} } },
     { new: true }
   ).select("-password -refreshToken");
 
@@ -283,10 +287,10 @@ export const updateUserCoverImage = asyncHandler(async (req, res) => {
   if (!coverImage.url) {
     throw new ApiError(400, "Error while uploading on cover Image");
   }
-
+  await deleteOldImage(req.user?._id, "coverImage")
   const user = await User.findByIdAndUpdate(
     req.user?._id,
-    { $set: { coverImage: coverImage.url } },
+    { $set: { coverImage: {url:coverImage?.url, publicId: coverImage?.public_id} } },
     { new: true }
   ).select("-password -refreshToken");
 
@@ -294,3 +298,5 @@ export const updateUserCoverImage = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, user, "Cover image is updated successfully"));
 });
+
+
